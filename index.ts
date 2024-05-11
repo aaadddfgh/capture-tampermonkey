@@ -71,6 +71,7 @@ customElements.define('full-screen-proxy', FullScreenProxy);
 
 var proxyInstance = null;
 
+
 GM_registerMenuCommand("start record", () => {
     result =new EventSctipt()
     if (fullScreenProxyReord.length !== 0) {
