@@ -1,0 +1,16 @@
+{
+  "name": "capture-div",
+  "version": "1.0.0",
+  "description": "a click capture div",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "aaadddfgh",
+  "license": "MIT",
+  "dependencies": {
+    "@types/tampermonkey": "^5.0.2",
+    "typescript": "~5.1.6"
+  }
+}
