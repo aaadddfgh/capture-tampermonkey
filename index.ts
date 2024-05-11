@@ -1,4 +1,11 @@
-
+// ==UserScript==
+// @name         capturer
+// @namespace    http://tampermonkey.net/
+// @version      2024-05-11
+// @description  capture your mouse event
+// @author       aaadddfgh
+// @grant        GM_registerMenuCommand
+// ==/UserScript==
 class SleepEvent {
     durtion: number
 }
