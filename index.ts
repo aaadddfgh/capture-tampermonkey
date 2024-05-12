@@ -5,25 +5,67 @@
 // @description  capture your mouse event
 // @author       aaadddfgh
 // @grant        GM_registerMenuCommand
+
+
+
 // ==/UserScript==
 class SleepEvent {
-    durtion: number
+    duration: number
 }
 
-class EventSctipt{
-    url:string
-    windowInfo:{
-        outerHeight:number,
-        outerWidth:number,
-        innerHeight:number,
-        innerWidth:number,
+class MouseEventExport {
+    clientX: number
+    clientY: number
+    offsetX: number
+    offsetY: number
+    pageX: number
+    pageY: number
+    screenX: number
+    screenY: number
+    altKey: boolean
+    bubbles: boolean
+    button: number
+    buttons: number
+    cancelBubble?: boolean
+    cancelable: boolean
+}
+class EventSctipt {
+    url: string
+    windowInfo: {
+        outerHeight: number,
+        outerWidth: number,
+        innerHeight: number,
+        innerWidth: number,
     }
-    actions:(MouseEvent | SleepEvent)[]
+    actions: (MouseEventExport | SleepEvent)[]
+}
+
+function downloadTextAsFile(text, fileName = 'download.txt') {
+    // 创建一个新的 Blob 对象，包含要写入文件的数据  
+    const blob = new Blob([text], { type: 'text/plain' });
+
+    // 创建一个指向该对象的URL  
+    const url = URL.createObjectURL(blob);
+
+    // 创建一个新的a元素用于下载  
+    const a = document.createElement('a');
+    a.style.display = 'none'; // 隐藏这个元素  
+    a.href = url;
+    // 设置下载的文件名  
+    a.download = fileName;
+
+    // 触发下载  
+
+    a.click(); // 模拟点击  
+
+
+    // 释放URL对象  
+    URL.revokeObjectURL(url);
 }
 
 var fullScreenProxyReord: (MouseEvent | SleepEvent)[] = []
 
-var result=new EventSctipt();
+var result = new EventSctipt();
 
 class FullScreenProxy extends HTMLElement {
     lastActionTime: number;
@@ -66,7 +108,7 @@ class FullScreenProxy extends HTMLElement {
 
             if (this.lastActionTime != undefined && this.lastActionTime != null) {
                 let sleep = new SleepEvent();
-                sleep.durtion = Date.now() - this.lastActionTime;
+                sleep.duration = Date.now() - this.lastActionTime;
                 fullScreenProxyReord.push(sleep)
             }
             this.lastActionTime = Date.now();
@@ -80,7 +122,7 @@ var proxyInstance = null;
 
 
 GM_registerMenuCommand("start record", () => {
-    result =new EventSctipt()
+    result = new EventSctipt()
     if (fullScreenProxyReord.length !== 0) {
         if (!window.confirm("some thing may not save, still start record?")) {
             return
@@ -103,17 +145,61 @@ GM_registerMenuCommand("stop", () => {
 })
 GM_registerMenuCommand("export", () => {
 
-    
-    result.url=location.toString();
-    result.windowInfo={
-        "outerHeight":window.outerHeight,
-        "outerWidth":window.outerWidth,
-        "innerHeight":window.innerHeight,
-        "innerWidth":window.innerWidth,
+
+    result.url = location.toString();
+    result.windowInfo = {
+        "outerHeight": window.outerHeight,
+        "outerWidth": window.outerWidth,
+        "innerHeight": window.innerHeight,
+        "innerWidth": window.innerWidth,
     }
-    result.actions=fullScreenProxyReord;
+
+    let record: (MouseEventExport | SleepEvent)[] = []
+    fullScreenProxyReord.forEach(
+        (e) => {
+            if (e instanceof SleepEvent) {
+                record.push(e)
+            }
+            else {
+                let { 
+                    clientX,
+                    clientY,
+                    offsetX,
+                    offsetY,
+                    pageX,
+                    pageY,
+                    screenX,
+                    screenY,
+                    altKey,
+                    bubbles,
+                    button,
+                    buttons,
+                    cancelable
+                } = e
+                record.push({
+                    clientX,
+                    clientY,
+                    offsetX,
+                    offsetY,
+                    pageX,
+                    pageY,
+                    screenX,
+                    screenY,
+                    altKey,
+                    bubbles,
+                    button,
+                    buttons,
+                    cancelable
+                })
+            }
+        }
+    )
+
+    result.actions = record;
+
+    downloadTextAsFile(JSON.stringify(result))
     console.log(result)
-    
+
 
 })
 
@@ -123,10 +209,17 @@ function Sleep(duration: number) {
     });
 }
 
+function isSleepEvent(e: any): e is SleepEvent {
+    if (e.duration) {
+        return true;
+    }
+    return false;
+}
+
 GM_registerMenuCommand("play", async () => {
     for (const i of fullScreenProxyReord) {
-        if (i instanceof SleepEvent) {
-            await Sleep(i.durtion);
+        if (isSleepEvent(i)) {
+            await Sleep(i.duration);
         }
         else {
             const elements = document.elementsFromPoint(i.clientX, i.clientY);
@@ -139,3 +232,42 @@ GM_registerMenuCommand("play", async () => {
         }
     }
 })
+
+
+GM_registerMenuCommand("import", async () => {
+
+    let code = prompt("输入导出的数据");
+
+    try {
+        const data: EventSctipt = JSON.parse(code);
+        fullScreenProxyReord = data.actions as (MouseEvent | SleepEvent)[];
+
+    }
+    catch (err) {
+        window.alert(err)
+    }
+
+    //** following code can not use in firefox */
+    // const fileInput = document.createElement('input');
+    // fileInput.type = 'file';
+    // fileInput.accept = '.txt';
+    // fileInput.id = 'dynamicFileInput';
+    // // 将文件输入元素添加到页面中  
+    // // 为文件输入元素添加change事件监听器  
+    // fileInput.addEventListener('change', function (e) {
+    //     var file = e.target.files[0];
+    //     if (!file) {
+    //         alert('请选择一个文件');
+    //         return;
+    //     }
+    //     var reader = new FileReader();
+    //     reader.onload = function (e) {
+    //         var text = e.target.result;
+    //         console.log(text); // 在控制台打印文本内容  
+    //         alert('文件内容:\n' + text); // 使用弹窗显示文件内容  
+    //     };
+    //     // 读取文件内容作为文本  
+    //     console.log(reader.readAsText(file));
+    // });
+    // fileInput.click();
+});
